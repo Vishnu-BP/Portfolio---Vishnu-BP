@@ -4,7 +4,7 @@ const nodemailer = require('nodemailer');
 const router = express.Router();
 
 // @route POST /api/contact
-// @desc Handle contact form submission (Phase 2.5)
+// @desc Handle contact form submission
 // @access Public
 router.post('/', async (req, res) => {
   const { name, email, message } = req.body;
@@ -13,17 +13,20 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ message: 'Please fill in all fields.' });
   }
 
-  // 1. Create a transporter object using secure SMTP transport
+  // 1. Create a transporter object using explicit secure SMTP transport
   const transporter = nodemailer.createTransport({
-    service: 'gmail', // Uses standard Gmail configuration
+    // VITAL FIX: Explicitly define HOST, PORT, and SECURITY
+    // This is the most reliable configuration for Gmail on cloud platforms
+    host: 'smtp.gmail.com', // Explicitly set the host
+    port: 465,              // Use the standard secure port 465
+    secure: true,           // Enforce SSL/TLS
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
-    // VITAL FIX: Force secure connection (SSL/TLS) required by Gmail/Render
-    // Port 465 is the standard secure port
-    secure: true,   
-    port: 465       
+    // Adding higher timeouts to combat ETIMEDOUT errors in cloud environment
+    connectionTimeout: 20000, // 20 seconds
+    socketTimeout: 20000,     // 20 seconds
   });
 
   // 2. Email content for the portfolio owner
@@ -47,7 +50,7 @@ router.post('/', async (req, res) => {
     subject: 'Thank You for Contacting Vishnu BP!',
     html: `
         <p>Hi ${name},</p>
-        <p>Thank Thank you for reaching out! I have received your message and will get back to you within 24 hours.</p>
+        <p>Thank you for reaching out! I have received your message and will get back to you within 24 hours.</p>
         <p>Best regards,</p>
         <p>Vishnu BP</p>
     `,
@@ -64,7 +67,7 @@ router.post('/', async (req, res) => {
   } catch (error) {
     console.error('Nodemailer Error:', error);
     // Provide a clearer error message related to the most common cause
-    res.status(500).json({ message: 'Failed to send message. Please ensure your EMAIL_PASS is a valid Google App Password.' });
+    res.status(500).json({ message: 'Failed to send message. Please ensure your EMAIL_PASS is a valid Google App Password and check server logs for Connection Timeout errors.' });
   }
 });
 
