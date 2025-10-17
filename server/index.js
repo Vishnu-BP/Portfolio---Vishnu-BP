@@ -54,29 +54,38 @@ app.use('/api/contact', contactRoutes);
 app.get('/', (req, res) => {
     res.send('Portfolio API is running...');
 });
-
 // ----------------------------------------------------------------------
 // --- Monolithic Deployment: Serve Frontend Assets in Production ---
 // ----------------------------------------------------------------------
 
+// Check if the application is running in a production environment 
 if (process.env.NODE_ENV === 'production') {
-    // Note: We are now ONLY checking for 'production' since Render sets it.
     
-    // Serve any static files from the client/build directory
-    // Ensure this path is correct relative to the START COMMAND (node server/index.js)
+    // Define the correct build path once
     const buildPath = path.join(__dirname, '..', 'client', 'build');
     
     // 1. Static Middleware: Serve compiled assets (CSS, JS, images)
     app.use(express.static(buildPath));
 
-    // 2. Catch-all Route: Handle all other GET requests (React routing)
-    // The '*' path is often problematic; we use a simple middleware function instead.
-    app.get('/*', (req, res) => {
-        // Send the main index.html for any request not caught by the API routes
-        res.sendFile(path.join(buildPath, 'index.html'));
+    // 2. Catch-all Middleware: For ANY GET request not matched by the API, 
+    //    send the index.html file. This is the safest way to handle client-side routing.
+    app.use((req, res, next) => {
+        // Only handle GET requests that are not for API routes
+        if (req.method === 'GET' && !req.path.startsWith('/api')) {
+            // Send the main index.html for any request not caught by the API routes
+            res.sendFile(path.join(buildPath, 'index.html'), (err) => {
+                if (err) {
+                    next(err); // Pass error to Express error handler
+                }
+            });
+        } else {
+            next(); // Move to next middleware (or let Express handle it if no more middleware)
+        }
     });
 }
 // ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
+
 
 // --- Start Server ---
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
