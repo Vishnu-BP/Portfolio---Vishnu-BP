@@ -50,10 +50,6 @@ app.use('/api/blogs', blogRoutes);
 app.use('/api/contact', contactRoutes);
 
 
-// --- Health Check / Default Route (Before Frontend Logic) ---
-app.get('/', (req, res) => {
-    res.send('Portfolio API is running...');
-});
 // ----------------------------------------------------------------------
 // --- Monolithic Deployment: Serve Frontend Assets in Production ---
 // ----------------------------------------------------------------------
