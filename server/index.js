@@ -55,26 +55,28 @@ app.get('/', (req, res) => {
     res.send('Portfolio API is running...');
 });
 
-
 // ----------------------------------------------------------------------
 // --- Monolithic Deployment: Serve Frontend Assets in Production ---
 // ----------------------------------------------------------------------
 
-// Check if the application is running in a production environment 
-// AND if the client/build directory exists (created by the Build Command)
-if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'development') {
+if (process.env.NODE_ENV === 'production') {
+    // Note: We are now ONLY checking for 'production' since Render sets it.
+    
     // Serve any static files from the client/build directory
-    app.use(express.static(path.join(__dirname, '..', 'client', 'build')));
+    // Ensure this path is correct relative to the START COMMAND (node server/index.js)
+    const buildPath = path.join(__dirname, '..', 'client', 'build');
+    
+    // 1. Static Middleware: Serve compiled assets (CSS, JS, images)
+    app.use(express.static(buildPath));
 
-    // Handle all other GET requests that don't match an API route 
-    // by serving the main index.html file (the entry point for React)
-    app.get('*', (req, res) => {
-        // Ensure the path correctly points to client/build/index.html
-        res.sendFile(path.resolve(__dirname, '..', 'client', 'build', 'index.html'));
+    // 2. Catch-all Route: Handle all other GET requests (React routing)
+    // The '*' path is often problematic; we use a simple middleware function instead.
+    app.get('/*', (req, res) => {
+        // Send the main index.html for any request not caught by the API routes
+        res.sendFile(path.join(buildPath, 'index.html'));
     });
 }
 // ----------------------------------------------------------------------
-
 
 // --- Start Server ---
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
