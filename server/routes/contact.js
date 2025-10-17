@@ -13,13 +13,17 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ message: 'Please fill in all fields.' });
   }
 
-  // 1. Create a transporter object using SMTP transport
+  // 1. Create a transporter object using secure SMTP transport
   const transporter = nodemailer.createTransport({
-    service: 'gmail', // Use your email provider here
+    service: 'gmail', // Uses standard Gmail configuration
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
+    // VITAL FIX: Force secure connection (SSL/TLS) required by Gmail/Render
+    // Port 465 is the standard secure port
+    secure: true,   
+    port: 465       
   });
 
   // 2. Email content for the portfolio owner
@@ -43,7 +47,7 @@ router.post('/', async (req, res) => {
     subject: 'Thank You for Contacting Vishnu BP!',
     html: `
         <p>Hi ${name},</p>
-        <p>Thank you for reaching out! I have received your message and will get back to you within 24 hours.</p>
+        <p>Thank Thank you for reaching out! I have received your message and will get back to you within 24 hours.</p>
         <p>Best regards,</p>
         <p>Vishnu BP</p>
     `,
@@ -59,7 +63,8 @@ router.post('/', async (req, res) => {
     res.status(200).json({ message: 'Message sent successfully! Check your email for confirmation.' });
   } catch (error) {
     console.error('Nodemailer Error:', error);
-    res.status(500).json({ message: 'Failed to send message. Please ensure your EMAIL_PASS is a valid App Password.' });
+    // Provide a clearer error message related to the most common cause
+    res.status(500).json({ message: 'Failed to send message. Please ensure your EMAIL_PASS is a valid Google App Password.' });
   }
 });
 
