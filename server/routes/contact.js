@@ -18,15 +18,15 @@ router.post('/', async (req, res) => {
     // VITAL FIX: Explicitly define HOST, PORT, and SECURITY
     // This is the most reliable configuration for Gmail on cloud platforms
     host: 'smtp.gmail.com', // Explicitly set the host
-    port: 465,              // Use the standard secure port 465
+    port: 587,              // Use the standard secure port 465
     secure: true,           // Enforce SSL/TLS
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
     // Adding higher timeouts to combat ETIMEDOUT errors in cloud environment
-    connectionTimeout: 20000, // 20 seconds
-    socketTimeout: 20000,     // 20 seconds
+    connectionTimeout: 30000, // 20 seconds
+    socketTimeout: 30000,     // 20 seconds
   });
 
   // 2. Email content for the portfolio owner
