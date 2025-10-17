@@ -43,7 +43,71 @@ router.post('/', protect, async (req, res) => {
     const newBlog = await Blog.create({ title, summary, content, tags });
     res.status(201).json(newBlog);
   } catch (error) {
-    res.status(400).json({ message: 'Invalid blog data or title already exists' });
+    // --- ENHANCED ERROR HANDLING: Find and report the specific validation error ---
+    if (error.name === 'ValidationError') {
+        let messages = {};
+        for (const field in error.errors) {
+            messages[field] = error.errors[field].message;
+        }
+        
+        // Log the detailed message to the server console/Render logs
+        console.error('Mongoose Validation Failed (POST):', messages); 
+        
+        // Send a detailed error message back to the frontend
+        return res.status(400).json({ 
+             message: 'Validation failed. Check the errors field for details.',
+             errors: messages 
+        });
+    }
+    // -----------------------------------------------------------------------------------
+    
+    // Original fallback for duplicate slug/title error
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'A blog post with this title already exists. Please choose a unique title.' });
+    }
+    
+    res.status(400).json({ message: 'Invalid blog data or missing required fields' });
+  }
+});
+
+// @route PUT /api/blogs/:id
+// @desc Update an existing blog post (Protected Access)
+// @access Private (Admin)
+router.put('/:id', protect, async (req, res) => {
+  try {
+    const blog = await Blog.findById(req.params.id);
+
+    if (blog) {
+        // Update all fields from request body
+        Object.assign(blog, req.body); 
+
+        const updatedBlog = await blog.save();
+        res.json(updatedBlog);
+    } else {
+        res.status(404).json({ message: 'Blog post not found' });
+    }
+  } catch (error) {
+    // --- ENHANCED ERROR HANDLING: Find and report the specific validation error ---
+    if (error.name === 'ValidationError') {
+        let messages = {};
+        for (const field in error.errors) {
+            messages[field] = error.errors[field].message;
+        }
+        
+        console.error('Mongoose Validation Failed (PUT):', messages); 
+        
+        return res.status(400).json({ 
+             message: 'Validation failed during update. Check the errors field for details.',
+             errors: messages 
+        });
+    }
+    // -----------------------------------------------------------------------------------
+
+    // Original fallback for duplicate slug/title error during update
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'A blog post with this title/slug already exists.' });
+    }
+    res.status(500).json({ message: 'Error updating blog post' });
   }
 });
 

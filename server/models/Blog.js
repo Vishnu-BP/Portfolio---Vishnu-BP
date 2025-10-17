@@ -33,11 +33,30 @@ const BlogSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Pre-save hook to generate slug (basic implementation)
+// Pre-save hook to generate slug (Corrected for safe creation and updates)
 BlogSchema.pre('save', function(next) {
-    if (this.isModified('title')) {
-        this.slug = this.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-*|-*$/g, '');
+    // Generate slug if the document is NEW (creation) OR the title field is modified (update)
+    if (this.isNew || this.isModified('title')) {
+        
+        // 1. Generate the slug from the title
+        let generatedSlug = this.title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric/spaces with hyphen
+            .replace(/^-*|-*$/g, ''); // Trim hyphens from start/end
+            
+        // 2. Assign the slug
+        this.slug = generatedSlug;
+
+        // 3. Fallback for empty slug (e.g., if title was only symbols)
+        if (!this.slug) {
+            // Use a fallback slug with a timestamp to ensure uniqueness and compliance
+            this.slug = 'blog-post-' + Date.now(); 
+        }
     }
+    
+    // NOTE: This corrected logic ensures the slug is created during a POST request, 
+    // resolving the 'Path `slug` is required.' validation error.
+    
     next();
 });
 

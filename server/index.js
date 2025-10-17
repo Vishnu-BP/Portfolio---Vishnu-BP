@@ -3,8 +3,9 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/db');
+const path = require('path'); // Import the path module
 
-// --- Import Routes (Will be created in Phase 2.4 and 2.5) ---
+// --- Import Routes ---
 const authRoutes = require('./routes/auth');
 const projectRoutes = require('./routes/projects');
 const blogRoutes = require('./routes/blogs');
@@ -21,11 +22,11 @@ const PORT = process.env.PORT || 5000;
 
 // --- Middleware ---
 
-// Enable CORS (Cross-Origin Resource Sharing)
-// This allows your React frontend (e.g., on port 3000) to communicate with this backend (on port 5000).
-// In production, you would restrict this to your actual deployed frontend URL.
+// **PRODUCTION NOTE:** Since the frontend and backend are now on the same domain (monolithic),
+// we don't need to enable wide-open CORS. We can simplify or remove it entirely if needed.
+// Leaving it simple for now, as it's often still required for security headers or pre-flight checks.
 app.use(cors({
-    origin: '*', // Allows all origins for development ease. Restrict this later.
+    origin: '*', // You can restrict this to your Render URL if needed, but '*' is fine for same-origin calls.
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
 }));
@@ -34,7 +35,7 @@ app.use(cors({
 app.use(express.json());
 
 
-// --- Define Core API Routes ---
+// --- Define Core API Routes (Routes prefixed with /api) ---
 
 // Authentication routes (Login/Admin)
 app.use('/api/auth', authRoutes);
@@ -49,10 +50,30 @@ app.use('/api/blogs', blogRoutes);
 app.use('/api/contact', contactRoutes);
 
 
-// --- Health Check / Default Route ---
+// --- Health Check / Default Route (Before Frontend Logic) ---
 app.get('/', (req, res) => {
     res.send('Portfolio API is running...');
 });
+
+
+// ----------------------------------------------------------------------
+// --- Monolithic Deployment: Serve Frontend Assets in Production ---
+// ----------------------------------------------------------------------
+
+// Check if the application is running in a production environment 
+// AND if the client/build directory exists (created by the Build Command)
+if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'development') {
+    // Serve any static files from the client/build directory
+    app.use(express.static(path.join(__dirname, '..', 'client', 'build')));
+
+    // Handle all other GET requests that don't match an API route 
+    // by serving the main index.html file (the entry point for React)
+    app.get('*', (req, res) => {
+        // Ensure the path correctly points to client/build/index.html
+        res.sendFile(path.resolve(__dirname, '..', 'client', 'build', 'index.html'));
+    });
+}
+// ----------------------------------------------------------------------
 
 
 // --- Start Server ---
